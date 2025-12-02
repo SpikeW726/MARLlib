@@ -36,8 +36,22 @@ from typing import Any, Dict, Tuple
 import yaml
 import os
 import sys
+import json
+import pprint
 
 SYSPARAMs = deepcopy(sys.argv)
+
+
+def _log_restore_path(algo_name: str, entry_name: str, restore_cfg: Any):
+    """统一打印 restore_path，便于排查热启动是否生效。"""
+    if not isinstance(restore_cfg, dict):
+        return
+    model_path = restore_cfg.get("model_path") or ""
+    params_path = restore_cfg.get("params_path") or ""
+    if not model_path and not params_path:
+        return
+    print(f"[MARLlib] {algo_name}.{entry_name} 使用 restore_path -> "
+          f"model_path={model_path or '[空]'}, params_path={params_path or '[空]'}")
 
 
 def set_ray(config: Dict):
@@ -302,11 +316,21 @@ class _Algo:
 
         self.config_dict = info
         self.config_dict = recursive_dict_update(self.config_dict, model_info)
-
+        # print("########## Update model infos ##########")
+        # print(json.dumps(self.config_dict, indent=4))
         self.config_dict = recursive_dict_update(self.config_dict, self.algo_parameters)
+        # print("########## Update algo parameters ##########")
+        # print(json.dumps(self.config_dict, indent=4))
         self.config_dict = recursive_dict_update(self.config_dict, running_params)
+        # print("########## Update running parameters ##########")
+        # pprint.pprint(self.config_dict, indent=1)
 
         self.config_dict['algorithm'] = self.name
+
+        entry_point = getattr(self, "_current_entry", "fit")
+        if hasattr(self, "_current_entry"):
+            delattr(self, "_current_entry")
+        _log_restore_path(self.name, entry_point, self.config_dict.get("restore_path"))
 
         if self.algo_type == "IL":
             return run_il(self.config_dict, env_instance, model_class, stop=stop)
@@ -330,6 +354,7 @@ class _Algo:
             None
         """
 
+        self._current_entry = "render"
         self.fit(env, model, stop, **running_params)
 
 

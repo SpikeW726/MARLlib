@@ -63,8 +63,11 @@ def run_mappo(model: Any, exp: Dict, run: Dict, env: Dict,
     make sure sgd_minibatch_size > max_seq_len
     """
     train_batch_size = _param["batch_episode"] * env["episode_limit"]
-    if "fixed_batch_timesteps" in exp:
-        train_batch_size = exp["fixed_batch_timesteps"]
+    fixed_batch_timesteps = exp.get("fixed_batch_timesteps")
+    if fixed_batch_timesteps is None:
+        fixed_batch_timesteps = exp.get("algo_args", {}).get("fixed_batch_timesteps")
+    if fixed_batch_timesteps is not None:
+        train_batch_size = int(fixed_batch_timesteps)
     sgd_minibatch_size = train_batch_size
     episode_limit = env["episode_limit"]
     while sgd_minibatch_size < episode_limit:
@@ -82,12 +85,19 @@ def run_mappo(model: Any, exp: Dict, run: Dict, env: Dict,
     entropy_coeff = _param["entropy_coeff"]
     back_up_config = merge_dicts(exp, env)
     back_up_config.pop("algo_args")  # clean for grid_search
+    entropy_coeff_schedule = exp.get("entropy_coeff_schedule")
+    if entropy_coeff_schedule is None:
+        entropy_coeff_schedule = exp.get("algo_args", {}).get("entropy_coeff_schedule")
+
+    # 🔧 修复：只在render模式下降低lr，继续训练时保持正常lr
+    is_rendering = restore is not None and isinstance(restore, dict) and restore.get('render', False)
+    effective_lr = 1e-10 if is_rendering else lr
 
     config = {
         "batch_mode": batch_mode,
         "train_batch_size": train_batch_size,
         "sgd_minibatch_size": sgd_minibatch_size,
-        "lr": lr if restore is None else 1e-10,
+        "lr": effective_lr,
         "entropy_coeff": entropy_coeff,
         "num_sgd_iter": num_sgd_iter,
         "clip_param": clip_param,
@@ -101,6 +111,8 @@ def run_mappo(model: Any, exp: Dict, run: Dict, env: Dict,
             "custom_model_config": back_up_config,
         },
     }
+    if entropy_coeff_schedule:
+        config["entropy_coeff_schedule"] = entropy_coeff_schedule
     config.update(run)
 
     algorithm = exp["algorithm"]

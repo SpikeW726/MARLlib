@@ -72,12 +72,17 @@ def run_iddpg(model: Any, exp: Dict, run: Dict, env: Dict,
     back_up_config = merge_dicts(exp, env)
     back_up_config.pop("algo_args")  # clean for grid_search
 
+    # 🔧 修复：只在render模式下降低lr，继续训练时保持正常lr
+    is_rendering = restore is not None and isinstance(restore, dict) and restore.get('render', False)
+    effective_critic_lr = 1e-10 if is_rendering else critic_lr
+    effective_actor_lr = 1e-10 if is_rendering else actor_lr
+
     config = {
         "batch_mode": batch_mode,
         "buffer_size": buffer_size,
         "train_batch_size": train_batch_size,
-        "critic_lr": critic_lr if restore is None else 1e-10,
-        "actor_lr": actor_lr if restore is None else 1e-10,
+        "critic_lr": effective_critic_lr,
+        "actor_lr": effective_actor_lr,
         "twin_q": twin_q,
         "prioritized_replay": prioritized_replay,
         "smooth_target_policy": smooth_target_policy,

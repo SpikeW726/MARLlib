@@ -35,15 +35,24 @@ def restore_config_update(exp_info, run_config, stop_config):
         restore_config = None
     else:
         restore_config = exp_info['restore_path']
-        if 'render' in exp_info['restore_path']:
+        
+        # 检查是否是评估/渲染模式
+        is_render_mode = restore_config.get('render', False)
+        
+        if is_render_mode:
+            # 评估模式：从 exp_info 中读取用户配置的 evaluation_num_episodes
+            user_eval_episodes = exp_info.get('evaluation_num_episodes', 1)
+            
             render_config = {
                 "evaluation_interval": 1,
-                "evaluation_num_episodes": 100,
-                "evaluation_num_workers": 1,
+                "evaluation_num_episodes": user_eval_episodes,
+                "evaluation_num_workers": 0,
                 "evaluation_config": {
                     "record_env": False,
-                    "render_env": True,
-                }
+                    "render_env": False,
+                    "explore": False,  # 🔧 关键修复：评估时禁用探索，使用纯 greedy 策略
+                },
+                "explore": False,  # 🔧 全局禁用探索
             }
 
             run_config = recursive_dict_update(run_config, render_config)
@@ -59,7 +68,14 @@ def restore_config_update(exp_info, run_config, stop_config):
 
 
 def run_cc(exp_info, env, model, stop=None):
-    ray.init(local_mode=exp_info["local_mode"], num_gpus=exp_info["num_gpus"])
+    # 获取 ray_init_config（如果存在）
+    ray_init_config = exp_info.get("ray_init_config", {})
+    ray.init(
+        local_mode=exp_info["local_mode"],
+        num_gpus=exp_info["num_gpus"],
+        object_store_memory=ray_init_config.get("object_store_memory"),
+        ignore_reinit_error=ray_init_config.get("ignore_reinit_error", True)
+    )
 
     ########################
     ### environment info ###

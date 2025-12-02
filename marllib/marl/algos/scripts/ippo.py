@@ -79,11 +79,15 @@ def run_ippo(model: Any, exp: Dict, run: Dict, env: Dict,
     back_up_config = merge_dicts(exp, env)
     back_up_config.pop("algo_args")  # clean for grid_search
 
+    # 🔧 修复：只在render模式下降低lr，继续训练时保持正常lr
+    is_rendering = restore is not None and isinstance(restore, dict) and restore.get('render', False)
+    effective_lr = 1e-10 if is_rendering else lr
+
     config = {
         "batch_mode": batch_mode,
         "train_batch_size": train_batch_size,
         "sgd_minibatch_size": sgd_minibatch_size,
-        "lr": lr if restore is None else 1e-10,
+        "lr": effective_lr,
         "entropy_coeff": entropy_coeff,
         "num_sgd_iter": num_sgd_iter,
         "clip_param": clip_param,

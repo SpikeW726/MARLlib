@@ -69,6 +69,10 @@ def run_ia2c(model: Any, exp: Dict, run: Dict, env: Dict,
     back_up_config = merge_dicts(exp, env)
     back_up_config.pop("algo_args")  # clean for grid_search
 
+    # 🔧 修复：只在render模式下降低lr，继续训练时保持正常lr
+    is_rendering = restore is not None and isinstance(restore, dict) and restore.get('render', False)
+    effective_lr = 1e-10 if is_rendering else lr
+
     config = {
         "train_batch_size": train_batch_size,
         "batch_mode": batch_mode,
@@ -76,7 +80,7 @@ def run_ia2c(model: Any, exp: Dict, run: Dict, env: Dict,
         "lambda": gae_lambda,
         "vf_loss_coeff": vf_loss_coeff,
         "entropy_coeff": entropy_coeff,
-        "lr": lr if restore is None else 1e-10,
+        "lr": effective_lr,
         "model": {
             "custom_model": "Base_Model",
             "max_seq_len": episode_limit,

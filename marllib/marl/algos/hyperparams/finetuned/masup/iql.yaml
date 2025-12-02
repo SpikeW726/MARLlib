@@ -1,0 +1,28 @@
+# Custom MASUP-specific overrides for IQL
+
+# # finetune
+# algo_args:
+#   batch_episode: 32
+#   lr: 0.00005
+#   rollout_fragment_length: 1
+#   buffer_size: 10000
+#   target_network_update_freq: 100
+#   final_epsilon: 0.01
+#   epsilon_timesteps: 5000
+#   optimizer: "rmsprop"
+#   reward_standardize: True
+
+# basic
+algo_args:
+  batch_episode: 64
+  lr: 0.0005
+  rollout_fragment_length: 1
+  buffer_size: 2000
+  target_network_update_freq: 200
+  final_epsilon: 0.05
+  epsilon_timesteps: 5000000
+  optimizer: "adam"
+  reward_standardize: True
+
+
+

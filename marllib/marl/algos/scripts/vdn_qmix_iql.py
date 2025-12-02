@@ -66,6 +66,7 @@ def run_joint_q(model: Any, exp: Dict, run: Dict, env: Dict,
     epsilon_timesteps = _param["epsilon_timesteps"]
     reward_standardize = _param["reward_standardize"]
     optimizer = _param["optimizer"]
+    grad_norm_clipping = _param.get("grad_norm_clipping", 10.0)
     back_up_config = merge_dicts(exp, env)
     back_up_config.pop("algo_args")  # clean for grid_search
 
@@ -91,7 +92,7 @@ def run_joint_q(model: Any, exp: Dict, run: Dict, env: Dict,
             "train_batch_size": train_batch_episode,  # in sequence
             "target_network_update_freq": episode_limit * target_network_update_frequency,  # in timesteps
             "learning_starts": episode_limit * train_batch_episode,
-            "lr": lr if restore is None else 1e-10,
+            "lr": lr,
             "exploration_config": {
                 "type": "EpsilonGreedy",
                 "initial_epsilon": 1.0,
@@ -103,6 +104,7 @@ def run_joint_q(model: Any, exp: Dict, run: Dict, env: Dict,
 
     JointQ_Config["reward_standardize"] = reward_standardize  # this may affect the final performance if you turn it on
     JointQ_Config["optimizer"] = optimizer
+    JointQ_Config["grad_norm_clipping"] = grad_norm_clipping
     JointQ_Config["training_intensity"] = None
 
     JQTrainer = JointQTrainer.with_updates(

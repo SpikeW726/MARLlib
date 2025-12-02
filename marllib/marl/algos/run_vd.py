@@ -36,7 +36,14 @@ torch, nn = try_import_torch()
 
 
 def run_vd(exp_info, env, model, stop=None):
-    ray.init(local_mode=exp_info["local_mode"], num_gpus=exp_info["num_gpus"])
+    # 获取 ray_init_config（如果存在）
+    ray_init_config = exp_info.get("ray_init_config", {})
+    ray.init(
+        local_mode=exp_info["local_mode"],
+        num_gpus=exp_info["num_gpus"],
+        object_store_memory=ray_init_config.get("object_store_memory"),
+        ignore_reinit_error=ray_init_config.get("ignore_reinit_error", True)
+    )
 
     ########################
     ### environment info ###
@@ -210,4 +217,3 @@ def run_vd(exp_info, env, model, stop=None):
     ray.shutdown()
 
     return results
-
