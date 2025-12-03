@@ -1,12 +1,12 @@
 algo_args:
   use_gae: True
-  lambda: 0.99
+  lambda: 1.0
   kl_coeff: 0.2
-  batch_episode: 2          # 每次迭代使用2个episode的数据 (2×10000=20000 timesteps)
+  batch_episode: 16          # 每次迭代使用2个episode的数据 (2×10000=20000 timesteps)
   num_sgd_iter: 10          # 增加SGD迭代次数，弥补较小的batch
-  vf_loss_coeff: 0.5        # 降低VF损失权重，平衡策略和价值学习
+  vf_loss_coeff: 1.0        # 降低VF损失权重，平衡策略和价值学习
   lr: 0.0005                # 略微降低学习率，更稳定
   entropy_coeff: 0.01       # 保持探索
-  clip_param: 0.2
-  vf_clip_param: 100000.0
+  clip_param: 0.3
+  vf_clip_param: 100.0
   batch_mode: "truncate_episodes"

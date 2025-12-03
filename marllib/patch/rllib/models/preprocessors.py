@@ -80,6 +80,15 @@ class Preprocessor:
     def check_shape(self, observation: Any) -> None:
         """Checks the shape of the given observation."""
         if self._i % OBS_VALIDATION_INTERVAL == 0:
+            # Skip validation for object arrays (custom observations like PyG Data)
+            if isinstance(observation, np.ndarray) and observation.dtype == object:
+                self._i += 1
+                return
+            if isinstance(observation, (dict, OrderedDict)):
+                for v in observation.values():
+                    if isinstance(v, np.ndarray) and v.dtype == object:
+                        self._i += 1
+                        return
             # Convert lists to np.ndarrays.
             if type(observation) is list and isinstance(
                     self._obs_space, gym.spaces.Box):
@@ -293,6 +302,11 @@ class DictFlatteningPreprocessor(Preprocessor):
 
     @override(Preprocessor)
     def transform(self, observation: TensorType) -> np.ndarray:
+        # Skip flattening for object arrays (custom observations like PyG Data)
+        if isinstance(observation, (dict, OrderedDict)):
+            for v in observation.values():
+                if isinstance(v, np.ndarray) and v.dtype == object:
+                    return observation
         self.check_shape(observation)
         array = np.zeros(self.shape, dtype=np.float32)
         self.write(observation, array, 0)

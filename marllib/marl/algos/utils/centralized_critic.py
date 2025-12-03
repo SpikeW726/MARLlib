@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 import numpy as np
+from collections import OrderedDict
 from ray.rllib.evaluation.postprocessing import compute_advantages
 from ray.rllib.utils.framework import try_import_torch
 from ray.rllib.utils.torch_ops import convert_to_torch_tensor
@@ -69,7 +70,27 @@ def centralized_critic_postprocessing(policy,
             (not pytorch and policy.loss_initialized()):
 
         if not opp_action_in_cc and global_state_flag:
-            sample_batch["state"] = sample_batch['obs'][:, action_mask_dim:]
+            # 优先使用环境直接提供的 state
+            has_state = "state" in sample_batch and sample_batch["state"] is not None
+            if has_state:
+                state_val = sample_batch["state"]
+                if isinstance(state_val, np.ndarray) and state_val.size > 0:
+                    state_data = state_val
+                else:
+                    has_state = False
+            
+            if not has_state:
+                obs_data = sample_batch['obs']
+                if isinstance(obs_data, (dict, OrderedDict)):
+                    if "state" in obs_data:
+                        state_data = obs_data["state"]
+                    else:
+                        raise ValueError(f"obs is dict but 'state' not found. Keys: {list(obs_data.keys())}")
+                elif isinstance(obs_data, np.ndarray) and obs_data.dtype == object:
+                    raise ValueError(f"obs is object array but 'state' not found. Keys: {list(sample_batch.keys())}")
+                else:
+                    state_data = obs_data[:, action_mask_dim:]
+            sample_batch["state"] = state_data
             sample_batch[SampleBatch.VF_PREDS] = policy.compute_central_vf(
                 convert_to_torch_tensor(
                     sample_batch["state"], policy.device),
@@ -86,7 +107,17 @@ def centralized_critic_postprocessing(policy,
             # all other agent obs as state
             # sample_batch["state"] = sample_batch['obs'][:, action_mask_dim:action_mask_dim + obs_dim]
             if global_state_flag:  # include self obs and global state
-                sample_batch["state"] = sample_batch['obs'][:, action_mask_dim:]
+                # 检查是否已经有 state 字段
+                if "state" in sample_batch and sample_batch["state"] is not None:
+                    pass  # state 已经由环境提供，直接使用
+                else:
+                    obs_data = sample_batch['obs']
+                    if isinstance(obs_data, np.ndarray) and obs_data.dtype == object:
+                        raise ValueError(
+                            "obs is object array but 'state' not found in sample_batch. "
+                            "Please ensure the environment provides 'state' separately."
+                        )
+                    sample_batch["state"] = obs_data[:, action_mask_dim:]
             else:
                 # must stack in order for the consistency
                 state_batch_list = []
