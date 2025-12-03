@@ -197,6 +197,10 @@ def run_vd(exp_info, env, model, stop=None):
         "evaluation_interval": exp_info["evaluation_interval"],
         "simple_optimizer": False  # force using better optimizer
     }
+    
+    # 传递 compress_observations 参数（GNN 模型需要设置为 False）
+    if "compress_observations" in exp_info:
+        run_config["compress_observations"] = exp_info["compress_observations"]
 
     stop_config = {
         "episode_reward_mean": exp_info["stop_reward"],

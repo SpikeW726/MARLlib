@@ -818,6 +818,13 @@ class TorchPolicy(Policy):
             for o, s in zip(self._optimizers, optimizer_vars):
                 optim_state_dict = convert_to_torch_tensor(
                     s, device=self.device)
+                # Filter out non-tensor entries (e.g., object arrays from GNN observations)
+                def filter_tensors(d):
+                    if isinstance(d, dict):
+                        return {k: filter_tensors(v) for k, v in d.items() 
+                                if not (isinstance(v, np.ndarray) and v.dtype == np.object_)}
+                    return d
+                optim_state_dict = filter_tensors(optim_state_dict)
                 o.load_state_dict(optim_state_dict)
         # Set exploration's state.
         if hasattr(self, "exploration") and "_exploration_state" in state:
