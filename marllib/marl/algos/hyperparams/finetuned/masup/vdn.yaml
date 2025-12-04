@@ -2,11 +2,11 @@
 
 # MapB
 algo_args:
-  batch_episode: 2
+  batch_episode: 16
   lr: 0.0005
   rollout_fragment_length: 1
-  buffer_size: 16
-  target_network_update_freq: 10
+  buffer_size: 500
+  target_network_update_freq: 200
   final_epsilon: 0.05
   epsilon_timesteps: 25000000
   optimizer: "adam"

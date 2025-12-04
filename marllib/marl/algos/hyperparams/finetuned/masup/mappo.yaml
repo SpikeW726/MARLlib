@@ -2,7 +2,7 @@ algo_args:
   use_gae: True
   lambda: 1.0
   kl_coeff: 0.2
-  batch_episode: 16          # 减少 batch 大小，降低内存压力
+  batch_episode: 12          # 减少 batch 大小，降低内存压力
   num_sgd_iter: 8
   vf_loss_coeff: 1.0
   lr: 0.0005
