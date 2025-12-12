@@ -63,6 +63,42 @@ def centralized_critic_postprocessing(policy,
     else:
         action_mask_dim = 0
 
+    # ==================== Active Masks 提取 ====================
+    # 用于 On-Policy 算法屏蔽非决策时刻的梯度
+    # active_mask = 1.0 表示智能体需要决策，0.0 表示正在执行动作中(No-Op)
+    active_masks_extracted = False
+    obs_data = sample_batch.get('obs')
+    
+    if obs_data is not None:
+        if isinstance(obs_data, (dict, OrderedDict)):
+            # 观测是字典格式，直接提取 active_mask
+            if 'active_mask' in obs_data:
+                sample_batch['active_masks'] = np.asarray(obs_data['active_mask'], dtype=np.float32)
+                active_masks_extracted = True
+        elif isinstance(obs_data, np.ndarray) and obs_data.dtype == object:
+            # 观测是 object array（如 PyG 数据），尝试从每个元素提取
+            try:
+                if len(obs_data) > 0 and hasattr(obs_data[0], 'get'):
+                    masks = [o.get('active_mask', 1.0) for o in obs_data]
+                    sample_batch['active_masks'] = np.array(masks, dtype=np.float32).reshape(-1, 1)
+                    active_masks_extracted = True
+            except Exception:
+                pass
+    
+    # 如果 sample_batch 中已有单独的 active_mask 字段（由环境直接提供）
+    if not active_masks_extracted and 'active_mask' in sample_batch:
+        sample_batch['active_masks'] = np.asarray(sample_batch['active_mask'], dtype=np.float32)
+        active_masks_extracted = True
+    
+    # 如果没有提取到 active_masks，默认所有样本都是活跃的（向后兼容）
+    if not active_masks_extracted:
+        sample_batch['active_masks'] = np.ones((sample_batch.count, 1), dtype=np.float32)
+    
+    # 确保 active_masks 是二维的 [batch_size, 1]
+    if sample_batch['active_masks'].ndim == 1:
+        sample_batch['active_masks'] = sample_batch['active_masks'].reshape(-1, 1)
+    # ==================== Active Masks 提取结束 ====================
+
     n_agents = custom_config["num_agents"]
     opponent_agents_num = n_agents - 1
 

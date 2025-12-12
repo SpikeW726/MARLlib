@@ -1,14 +1,26 @@
 # Custom MASUP-specific overrides for VDN
 
-# MapB
+# # MapB
+# algo_args:
+#   batch_episode: 16
+#   lr: 0.0005
+#   rollout_fragment_length: 1
+#   buffer_size: 500
+#   target_network_update_freq: 200
+#   final_epsilon: 0.05
+#   epsilon_timesteps: 25000000
+#   optimizer: "adam"
+#   reward_standardize: True
+
+# middle graph
 algo_args:
-  batch_episode: 16
-  lr: 0.0005
+  batch_episode: 54 
+  lr: 3e-4 
   rollout_fragment_length: 1
-  buffer_size: 500
+  buffer_size: 2000 
   target_network_update_freq: 200
   final_epsilon: 0.05
-  epsilon_timesteps: 25000000
+  epsilon_timesteps: 7000000
   optimizer: "adam"
   reward_standardize: True
 

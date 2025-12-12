@@ -1,12 +1,12 @@
 algo_args:
   use_gae: True
-  lambda: 1.0
+  lambda: 0.99
   kl_coeff: 0.2
-  batch_episode: 12          # 减少 batch 大小，降低内存压力
-  num_sgd_iter: 8
-  vf_loss_coeff: 1.0
+  batch_episode: 32
+  num_sgd_iter: 4
+  vf_loss_coeff: 0.5
   lr: 0.0005
-  entropy_coeff: 0.1
+  entropy_coeff: 0.8
   clip_param: 0.3
-  vf_clip_param: 100.0
+  vf_clip_param: 50.0
   batch_mode: "truncate_episodes"
